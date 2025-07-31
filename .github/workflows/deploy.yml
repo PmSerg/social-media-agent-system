@@ -1,0 +1,48 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Build Docker image
+      run: |
+        docker build -t social-media-agent-backend ./backend-system
+    
+    # Add your deployment steps here based on your hosting platform
+    # Examples:
+    
+    # For AWS ECR/ECS:
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v4
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: us-east-1
+    
+    # For Google Cloud Run:
+    # - name: Setup Cloud SDK
+    #   uses: google-github-actions/setup-gcloud@v1
+    #   with:
+    #     service_account_key: ${{ secrets.GCP_SA_KEY }}
+    #     project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    # For Heroku:
+    # - name: Deploy to Heroku
+    #   uses: akhileshns/heroku-deploy@v3.12.12
+    #   with:
+    #     heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+    #     heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+    #     heroku_email: ${{ secrets.HEROKU_EMAIL }}

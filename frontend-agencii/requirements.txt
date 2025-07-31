@@ -1,0 +1,17 @@
+# Agency Swarm Framework
+agency-swarm==0.2.5
+
+# Data validation
+pydantic==2.5.0
+
+# HTTP client for backend communication
+requests==2.31.0
+
+# Environment variable management
+python-dotenv==1.0.0
+
+# Notion API client
+notion-client==2.2.0
+
+# Additional utilities
+typing-extensions>=4.8.0
