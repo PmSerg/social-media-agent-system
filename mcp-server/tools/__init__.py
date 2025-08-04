@@ -1,7 +1,7 @@
-# Tools module - import individually as needed
+"""Shared tools for the MCP server."""
+
+from .TestTool import TestTool
+
 __all__ = [
-    "CommandProcessor",
-    "NotionTaskManager", 
-    "ResearchAgentProxy",
-    "CopywriterAgentProxy"
+    "TestTool"
 ]

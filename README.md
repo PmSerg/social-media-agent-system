@@ -277,6 +277,21 @@ Enable debug logging:
 LOG_LEVEL=DEBUG
 ```
 
+## 📚 Documentation
+
+Additional documentation is organized in the `docs/` directory:
+
+- **Deployment**
+  - [Railway Deployment Guide](docs/deployment/DEPLOY_RAILWAY.md)
+  - [Agencii Setup Guide](docs/deployment/SETUP_AGENCII.md)
+- **Development**
+  - [Contributing Guidelines](docs/development/CONTRIBUTING.md)
+  - [GitHub Setup](docs/development/GITHUB_SETUP.md)
+- **Integration**
+  - [Agencii Integration Rules](docs/integration/AGENCII_CLAUDE.md)
+  - [Notion Changes Guide](docs/integration/NOTION_CHANGES_GUIDE.md)
+  - [Notion Views Details](docs/integration/NOTION_VIEWS_DETAILED.md)
+
 ## 🤝 Contributing
 
 1. Fork the repository

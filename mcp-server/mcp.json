@@ -1,3 +1,17 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "social-media": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "-u",
+        "server/start_mcp.py"
+      ],
+      "env": {
+        "MCP_TOOLS_DIR": "./social_media_mcp",
+        "MCP_INSTANCE_NAME": "social_media",
+        "PYTHONPATH": "${PYTHONPATH}:./social_media_mcp:./tools"
+      }
+    }
+  }
 }

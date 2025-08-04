@@ -1,5 +1,0 @@
-agency-swarm
-python-dotenv
-firecrawl-py
-firecrawl-mcp
-requests

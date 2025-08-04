@@ -1,6 +1,7 @@
 {
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install && pip install -r requirements.txt"
   },
   "deploy": {
     "startCommand": "npm start",
@@ -10,6 +11,18 @@
   "env": {
     "PORT": {
       "default": "8080"
+    },
+    "MCP_PORT": {
+      "default": "8000"
+    },
+    "MCP_TOOLS_DIR": {
+      "default": "./social_media_mcp"
+    },
+    "MCP_INSTANCE_NAME": {
+      "default": "social_media"
+    },
+    "PYTHONPATH": {
+      "default": "./social_media_mcp:./tools"
     }
   }
 }
