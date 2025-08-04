@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 8080;
 
 // MCP server instance
 let mcpProcess = null;
-const MCP_PORT = 8081;
+const MCP_PORT = 8000;
 
 // Start Python MCP server
 function startMCPServer() {

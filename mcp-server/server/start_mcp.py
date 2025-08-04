@@ -204,6 +204,8 @@ if __name__ == "__main__":
     # Override port with MCP_PORT env var if set
     if 'MCP_PORT' in os.environ:
         config.port = int(os.environ['MCP_PORT'])
+    elif 'PORT' in os.environ:
+        config.port = int(os.environ['PORT'])
     
     # Load tools from base directory (parent level only)
     base_tools = load_tools_from_directory(DEFAULT_TOOLS_DIR, parent_only=True)
