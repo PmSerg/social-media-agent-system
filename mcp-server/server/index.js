@@ -15,13 +15,34 @@ const MCP_PORT = 8081;
 function startMCPServer() {
   console.log(`Starting Python MCP server on port ${MCP_PORT}...`);
   
-  const pythonPath = process.env.PYTHON_PATH || 'python';
+  // Try different Python commands
+  const pythonCommands = ['python3', 'python', 'python3.11'];
+  const pythonPath = process.env.PYTHON_PATH || pythonCommands.find(cmd => {
+    try {
+      const result = require('child_process').execSync(`which ${cmd}`, { encoding: 'utf8' });
+      console.log(`Found Python at: ${result.trim()}`);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }) || 'python';
+  
+  console.log(`Using Python command: ${pythonPath}`);
+  
   const scriptPath = path.join(__dirname, 'start_mcp.py');
+  console.log(`Script path: ${scriptPath}`);
+  console.log(`Working directory: ${path.join(__dirname, '..')}`);
+  
+  // Check if script exists
+  if (!fs.existsSync(scriptPath)) {
+    console.error(`ERROR: Python script not found at ${scriptPath}`);
+    return;
+  }
   
   mcpProcess = spawn(pythonPath, [scriptPath], {
     env: {
       ...process.env,
-      MCP_PORT: MCP_PORT,
+      MCP_PORT: MCP_PORT.toString(),
       PYTHONPATH: path.join(__dirname, '..'),
     },
     cwd: path.join(__dirname, '..'),
@@ -33,6 +54,10 @@ function startMCPServer() {
 
   mcpProcess.stderr.on('data', (data) => {
     console.error(`MCP Error: ${data}`);
+  });
+
+  mcpProcess.on('error', (error) => {
+    console.error(`Failed to start MCP process: ${error.message}`);
   });
 
   mcpProcess.on('exit', (code) => {

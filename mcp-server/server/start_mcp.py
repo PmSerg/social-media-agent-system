@@ -1,5 +1,4 @@
-import uvicorn # noqa
-import argparse
+#!/usr/bin/env python3
 import os
 import sys
 import importlib.util
@@ -7,26 +6,58 @@ import inspect
 import logging
 from typing import List, Type
 
-# Configure logging
+# Configure logging first
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger(__name__)
 
+logger.info("=" * 50)
 logger.info("Starting MCP server script...")
 logger.info(f"Python version: {sys.version}")
+logger.info(f"Python executable: {sys.executable}")
 logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"Script location: {__file__}")
 logger.info(f"Environment PORT: {os.environ.get('PORT')}")
 logger.info(f"Environment MCP_PORT: {os.environ.get('MCP_PORT')}")
+logger.info(f"Python path: {sys.path}")
+logger.info("=" * 50)
+
+# Try importing required modules with detailed error handling
+try:
+    import uvicorn
+    logger.info("✓ uvicorn imported successfully")
+except ImportError as e:
+    logger.error(f"✗ Failed to import uvicorn: {e}")
+    sys.exit(1)
+
+try:
+    import argparse
+    logger.info("✓ argparse imported successfully")
+except ImportError as e:
+    logger.error(f"✗ Failed to import argparse: {e}")
+    sys.exit(1)
 
 try:
     from agency_swarm.tools import BaseTool
-    from agency_swarm.integrations.mcp_server import run_mcp
-    logger.info("Successfully imported agency_swarm modules")
-except Exception as e:
-    logger.error(f"Failed to import agency_swarm modules: {e}")
+    logger.info("✓ agency_swarm.tools.BaseTool imported successfully")
+except ImportError as e:
+    logger.error(f"✗ Failed to import agency_swarm.tools.BaseTool: {e}")
+    logger.error("Make sure agency-swarm is installed: pip install agency-swarm>=1.0.0b5")
     sys.exit(1)
+
+try:
+    from agency_swarm.integrations.mcp_server import run_mcp
+    logger.info("✓ agency_swarm.integrations.mcp_server.run_mcp imported successfully")
+except ImportError as e:
+    logger.error(f"✗ Failed to import agency_swarm.integrations.mcp_server.run_mcp: {e}")
+    sys.exit(1)
+
+logger.info("All imports successful!")
 
 # Default configuration
 DEFAULT_TOOLS_DIR = "./tools"
