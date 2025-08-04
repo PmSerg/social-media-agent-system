@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0", description="API host")
     api_port: int = Field(default=8000, description="API port")
     api_workers: int = Field(default=1, description="Number of API workers")
+    port: Optional[int] = Field(default=None, description="Railway PORT override")
     
     # CORS Configuration
     allowed_origins: List[str] = Field(
@@ -47,6 +48,9 @@ class Settings(BaseSettings):
     webhook_base_url: str = Field(default="https://agencii.ai/webhooks", description="Webhook base URL")
     webhook_timeout: int = Field(default=10, description="Webhook timeout in seconds")
     webhook_retry_attempts: int = Field(default=3, description="Webhook retry attempts")
+    
+    # API Security
+    backend_webhook_secret: str = Field(..., description="Secret key for API authentication", alias="API_SECRET_KEY")
     
     # Rate Limiting
     rate_limit_default: str = Field(default="100 per minute", description="Default rate limit")
@@ -96,8 +100,9 @@ class Settings(BaseSettings):
     @validator("notion_token")
     def validate_notion_token(cls, v):
         """Validate Notion token format."""
-        if not v.startswith("secret_"):
-            raise ValueError("Notion token must start with 'secret_'")
+        # New Notion tokens start with 'ntn_' instead of 'secret_'
+        if not (v.startswith("secret_") or v.startswith("ntn_")):
+            raise ValueError("Notion token must start with 'secret_' or 'ntn_'")
         return v
     
     class Config:

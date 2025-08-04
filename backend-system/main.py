@@ -16,11 +16,12 @@ import os
 from datetime import datetime
 
 # Import configuration
-from config import settings
+from config.settings import settings
 
 # Import API endpoints
 from api.command_endpoint import router as command_router
 from api.health_endpoint import router as health_router
+from api.agencii_endpoints import router as agencii_router
 
 # Import task monitor
 from agents.task_monitor import TaskMonitor
@@ -187,6 +188,7 @@ async def root():
 # Include routers
 app.include_router(command_router, tags=["Commands"])
 app.include_router(health_router, tags=["Health"])
+app.include_router(agencii_router, tags=["Agencii"])
 
 # Agent-specific endpoints will be added here
 # app.include_router(research_router, prefix="/agents", tags=["Agents"])
@@ -225,10 +227,13 @@ if __name__ == "__main__":
     """Run the application directly for development."""
     import uvicorn
     
+    # Use PORT from environment for Railway, fallback to api_port
+    port = int(os.environ.get("PORT", settings.api_port))
+    
     uvicorn.run(
         "main:app",
         host=settings.api_host,
-        port=settings.api_port,
+        port=port,
         reload=settings.is_development,
         workers=settings.api_workers if not settings.is_development else 1,
         log_level=settings.log_level.lower()

@@ -7,8 +7,10 @@ from typing import Optional, Dict, Any, List
 from notion_client import AsyncClient
 import asyncio
 from datetime import datetime
+import random
 
 from config import settings
+from config.notion_databases import ARCHETYPES
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +63,7 @@ async def create_task_page(
     
     # Build properties
     properties = {
-        "Name": {
+        "Task name": {
             "title": [{"text": {"content": title}}]
         },
         "Status": {
@@ -71,7 +73,7 @@ async def create_task_page(
     
     if command:
         properties["Command Used"] = {
-            "rich_text": [{"text": {"content": command}}]
+            "select": {"name": command}  # Changed to select based on DB structure
         }
     
     if execution_mode:
@@ -79,8 +81,9 @@ async def create_task_page(
             "select": {"name": execution_mode}
         }
     
+    # Store description in Research Data field
     if description:
-        properties["Task Description"] = {
+        properties["Research Data"] = {
             "rich_text": [{"text": {"content": description[:2000]}}]  # Notion limit
         }
     
@@ -252,6 +255,145 @@ async def get_scheduled_tasks(limit: int = 10) -> List[Dict[str, Any]]:
     return await query_tasks(filter_dict, page_size=limit)
 
 
+# Archetype helper functions
+
+def get_archetype_by_weight() -> Dict[str, Any]:
+    """
+    Select archetype based on percentage weights.
+    
+    Returns:
+        Selected archetype dictionary
+    """
+    # Create weighted list
+    weighted_choices = []
+    for key, archetype in ARCHETYPES.items():
+        weighted_choices.extend([key] * archetype["percentage"])
+    
+    # Random selection based on weights
+    selected_key = random.choice(weighted_choices)
+    return ARCHETYPES[selected_key]
+
+
+def get_archetype_by_name(name: str) -> Optional[Dict[str, Any]]:
+    """
+    Get archetype by name.
+    
+    Args:
+        name: Archetype name (Caregiver, Explorer, Regular Guy)
+        
+    Returns:
+        Archetype dictionary or None
+    """
+    for key, archetype in ARCHETYPES.items():
+        if archetype["name"].lower() == name.lower():
+            return archetype
+    return None
+
+
+def get_archetype_voice(archetype_name: str) -> str:
+    """
+    Get voice description for archetype.
+    
+    Args:
+        archetype_name: Name of archetype
+        
+    Returns:
+        Voice description string
+    """
+    archetype = get_archetype_by_name(archetype_name)
+    if archetype:
+        return archetype["voice"]
+    return "Professional"  # Default
+
+
+def get_archetype_traits(archetype_name: str) -> List[str]:
+    """
+    Get personality traits for archetype.
+    
+    Args:
+        archetype_name: Name of archetype
+        
+    Returns:
+        List of traits
+    """
+    archetype = get_archetype_by_name(archetype_name)
+    if archetype:
+        return archetype["traits"]
+    return []
+
+
+async def add_task_archetype(page_id: str, archetype_name: str):
+    """Add archetype used to task."""
+    await update_task_page(page_id, {
+        "Archetype Used": {"select": {"name": archetype_name}}
+    })
+
+
+async def get_brand_guidelines(channel: str) -> Optional[Dict[str, Any]]:
+    """
+    Get brand guidelines for specific channel from Rules/Examples database.
+    
+    Args:
+        channel: Social media channel name
+        
+    Returns:
+        Brand guidelines or None
+    """
+    from config.notion_databases import DATABASES
+    
+    client = get_notion_client()
+    
+    try:
+        # Query Rules/Examples database
+        response = await client.databases.query(
+            database_id=DATABASES["rules_examples"]["id"],
+            filter={
+                "property": "Channel",
+                "select": {"equals": channel}
+            },
+            page_size=1
+        )
+        
+        if response.get("results"):
+            page = response["results"][0]
+            properties = page.get("properties", {})
+            
+            # Extract relevant guidelines
+            guidelines = {
+                "tone_of_voice": properties.get("Tone of Voice", {}).get("select", {}).get("name"),
+                "brand_guidelines": extract_text_from_property(properties.get("Brand Guidelines")),
+                "post_format": extract_text_from_property(properties.get("Post Format")),
+                "content_examples": extract_text_from_property(properties.get("Content Examples")),
+                "hashtags": extract_text_from_property(properties.get("Hashtags")),
+                "cta_examples": extract_text_from_property(properties.get("CTA Examples")),
+                "archetype_guidelines": extract_text_from_property(properties.get("Archetype Guidelines")),
+                "archetype_examples": extract_text_from_property(properties.get("Archetype Examples"))
+            }
+            
+            return guidelines
+            
+    except Exception as e:
+        logger.error(f"Failed to get brand guidelines: {e}")
+        
+    return None
+
+
+def extract_text_from_property(property_value: Any) -> str:
+    """Extract text from Notion property value."""
+    if not property_value:
+        return ""
+    
+    # Handle rich_text type
+    if "rich_text" in property_value:
+        texts = []
+        for text_block in property_value["rich_text"]:
+            if "text" in text_block:
+                texts.append(text_block["text"]["content"])
+        return " ".join(texts)
+    
+    return ""
+
+
 # Export functions
 __all__ = [
     "get_notion_client",
@@ -264,5 +406,13 @@ __all__ = [
     "add_task_content",
     "add_task_research",
     "get_waiting_tasks",
-    "get_scheduled_tasks"
+    "get_scheduled_tasks",
+    # Archetype functions
+    "get_archetype_by_weight",
+    "get_archetype_by_name",
+    "get_archetype_voice",
+    "get_archetype_traits",
+    "add_task_archetype",
+    "get_brand_guidelines",
+    "extract_text_from_property"
 ]

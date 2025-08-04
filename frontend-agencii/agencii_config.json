@@ -1,0 +1,81 @@
+{
+  "agency_name": "Kea Social Media Agency",
+  "agency_description": "AI-powered social media content creation using Kea's brand archetypes",
+  "version": "1.0.0",
+  "agents": [
+    {
+      "name": "Orchestrator",
+      "path": "SocialMediaAgency/Orchestrator/Orchestrator.py",
+      "description": "Main interface agent that processes commands and orchestrates content creation",
+      "tools": [
+        {
+          "name": "CommandProcessor",
+          "description": "Processes /create-content-post commands"
+        },
+        {
+          "name": "NotionTaskManager", 
+          "description": "Manages tasks in Notion database"
+        },
+        {
+          "name": "ResearchAgentProxy",
+          "description": "Calls backend Research Agent"
+        },
+        {
+          "name": "CopywriterAgentProxy",
+          "description": "Calls backend Copywriter Agent"
+        }
+      ]
+    }
+  ],
+  "environment_variables": [
+    {
+      "name": "BACKEND_URL",
+      "description": "URL of the backend API (e.g., https://api.kea.ai)",
+      "required": true
+    },
+    {
+      "name": "NOTION_TOKEN",
+      "description": "Notion integration token (starts with ntn_)",
+      "required": true
+    },
+    {
+      "name": "NOTION_DATABASE_ID",
+      "description": "ID of the Content Plan database in Notion",
+      "required": true
+    },
+    {
+      "name": "API_SECRET_KEY",
+      "description": "Secret key for backend API authentication",
+      "required": true
+    }
+  ],
+  "deployment": {
+    "platform": "agencii",
+    "requirements_file": "requirements.txt",
+    "entry_point": "agency.py"
+  },
+  "features": {
+    "brand_archetypes": {
+      "enabled": true,
+      "types": [
+        {
+          "name": "Caregiver",
+          "percentage": 35,
+          "description": "Empathetic and supportive content"
+        },
+        {
+          "name": "Explorer",
+          "percentage": 35,
+          "description": "Innovative and bold content"
+        },
+        {
+          "name": "Regular Guy",
+          "percentage": 30,
+          "description": "Simple and practical content"
+        }
+      ]
+    },
+    "platforms": ["Twitter", "LinkedIn", "Facebook", "Instagram"],
+    "tones": ["Professional", "Casual", "Playful", "Educational"]
+  }
+}

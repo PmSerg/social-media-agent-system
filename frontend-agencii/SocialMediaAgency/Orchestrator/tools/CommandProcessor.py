@@ -8,7 +8,8 @@ import os
 import requests
 from dotenv import load_dotenv
 import re
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from ..schemas import CreateContentCommand, Platform, Tone
 
 load_dotenv()
 

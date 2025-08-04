@@ -11,6 +11,7 @@ from serpapi import GoogleSearch
 
 from config import settings
 from api.models import ResearchResult
+from shared.notion_client import get_archetype_by_weight, get_archetype_traits
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +41,22 @@ class ResearchAgent:
         depth = params.get("depth", "standard")
         focus_areas = params.get("focus_areas", [])
         
-        logger.info(f"Starting research for topic: {topic}, depth: {depth}")
+        # Select archetype for this research
+        archetype = get_archetype_by_weight()
+        archetype_name = archetype["name"]
+        
+        logger.info(f"Starting research for topic: {topic}, depth: {depth}, archetype: {archetype_name}")
+        
+        # Store archetype in context for copywriter
+        context["selected_archetype"] = archetype_name
         
         try:
-            # Perform web search
-            search_results = await self._search_web(topic, depth)
+            # Perform web search with archetype consideration
+            search_query = self._build_search_query(topic, archetype)
+            search_results = await self._search_web(search_query, depth)
             
-            # Analyze results with GPT-4
-            analysis = await self._analyze_results(topic, search_results, focus_areas)
+            # Analyze results with GPT-4 and archetype perspective
+            analysis = await self._analyze_results(topic, search_results, focus_areas, archetype)
             
             # Extract key information
             result = ResearchResult(
@@ -122,11 +131,26 @@ class ResearchAgent:
             logger.error(f"SerpAPI error: {e}")
             return []
     
+    def _build_search_query(self, topic: str, archetype: Dict[str, Any]) -> str:
+        """Build search query based on topic and archetype perspective."""
+        archetype_name = archetype["name"]
+        
+        if archetype_name == "Caregiver":
+            # Focus on support, trust, reliability
+            return f"{topic} support trust reliability customer care"
+        elif archetype_name == "Explorer":
+            # Focus on innovation, solutions, opportunities
+            return f"{topic} innovative solutions new opportunities technology"
+        else:  # Regular Guy
+            # Focus on practical, simple, everyday use
+            return f"{topic} simple practical easy everyday business"
+    
     async def _analyze_results(
         self,
         topic: str,
         search_results: List[Dict],
-        focus_areas: List[str]
+        focus_areas: List[str],
+        archetype: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Analyze search results using GPT-4."""
         if not search_results:
@@ -140,21 +164,26 @@ class ResearchAgent:
         # Prepare content for analysis
         results_text = self._prepare_results_for_analysis(search_results)
         
-        # Create analysis prompt
+        # Create analysis prompt with archetype perspective
         focus_text = f"Focus on these areas: {', '.join(focus_areas)}" if focus_areas else ""
+        archetype_traits = ', '.join(archetype["traits"])
         
         prompt = f"""
         Analyze the following search results about: {topic}
         {focus_text}
         
+        Analyze from the perspective of the {archetype['name']} archetype:
+        - Traits: {archetype_traits}
+        - Description: {archetype['description']}
+        
         Search Results:
         {results_text}
         
         Please provide:
-        1. Key Findings: List 3-5 most important findings
-        2. Summary: 2-3 sentence overview
+        1. Key Findings: List 3-5 most important findings that align with the {archetype['name']} perspective
+        2. Summary: 2-3 sentence overview emphasizing {archetype['name']} values
         3. Statistics: Any relevant numbers or data points
-        4. Trends: Current or emerging trends
+        4. Trends: Current or emerging trends relevant to {archetype['name']} audience
         
         Format as JSON with keys: findings (list), summary (string), statistics (list), trends (list)
         """
@@ -163,7 +192,7 @@ class ResearchAgent:
             response = await self.openai_client.chat.completions.create(
                 model="gpt-4-turbo-preview",
                 messages=[
-                    {"role": "system", "content": "You are a research analyst. Analyze information and extract key insights."},
+                    {"role": "system", "content": f"You are a research analyst for Kea brand. Analyze information through the lens of the {archetype['name']} archetype: {archetype['description']}"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,  # Lower temperature for factual analysis

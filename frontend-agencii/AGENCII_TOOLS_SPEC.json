@@ -1,0 +1,148 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kea Content Creation Tools",
+    "description": "AI-powered social media content creation with brand archetypes",
+    "version": "v1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://kea-backend.railway.app"
+    }
+  ],
+  "paths": {
+    "/api/create-content": {
+      "post": {
+        "description": "Create social media content with Kea's brand voice (Caregiver 35%, Explorer 35%, Regular Guy 30%)",
+        "operationId": "CreateContent",
+        "x-openai-isConsequential": false,
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "topic": {
+                    "description": "The topic or subject for the content",
+                    "title": "Topic",
+                    "type": "string"
+                  },
+                  "platform": {
+                    "description": "Target social media platform",
+                    "title": "Platform",
+                    "type": "string",
+                    "enum": ["twitter", "linkedin", "facebook", "instagram"],
+                    "default": "linkedin"
+                  },
+                  "tone": {
+                    "description": "Desired tone of the content",
+                    "title": "Tone",
+                    "type": "string",
+                    "enum": ["professional", "casual", "playful", "educational"],
+                    "default": "professional"
+                  },
+                  "keywords": {
+                    "description": "Keywords to include (optional)",
+                    "items": {
+                      "type": "string"
+                    },
+                    "title": "Keywords",
+                    "type": "array"
+                  },
+                  "call_to_action": {
+                    "description": "Call-to-action text (optional)",
+                    "title": "Call to Action",
+                    "type": "string"
+                  },
+                  "include_hashtags": {
+                    "default": true,
+                    "description": "Generate and include hashtags",
+                    "title": "Include Hashtags",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "topic"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/check-task-status": {
+      "post": {
+        "description": "Check the status of a content creation task",
+        "operationId": "CheckTaskStatus",
+        "x-openai-isConsequential": false,
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "task_id": {
+                    "description": "Notion task ID to check",
+                    "title": "Task ID",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "task_id"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/list-recent-content": {
+      "post": {
+        "description": "List recently created content",
+        "operationId": "ListRecentContent",
+        "x-openai-isConsequential": false,
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "limit": {
+                    "default": 10,
+                    "description": "Number of items to return",
+                    "title": "Limit",
+                    "type": "integer"
+                  },
+                  "platform": {
+                    "description": "Filter by platform (optional)",
+                    "title": "Platform",
+                    "type": "string"
+                  },
+                  "archetype": {
+                    "description": "Filter by archetype used (optional)",
+                    "title": "Archetype",
+                    "type": "string",
+                    "enum": ["Caregiver", "Explorer", "Regular Guy"]
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header"
+      }
+    }
+  }
+}

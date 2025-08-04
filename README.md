@@ -83,26 +83,63 @@ This system combines the power of Agency Swarm, OpenAI GPT-4, and Notion to crea
    Edit `.env` with your credentials:
    ```env
    OPENAI_API_KEY=your_openai_key
-   NOTION_TOKEN=your_notion_token
-   NOTION_DATABASE_ID=your_database_id
-   SERPAPI_KEY=your_serpapi_key
+   NOTION_TOKEN=your_notion_integration_token
+   SERP_API_KEY=your_serpapi_key
    REDIS_URL=redis://localhost:6379
-   BACKEND_WEBHOOK_SECRET=your_webhook_secret
+   API_SECRET_KEY=your_api_secret_key
+   
+   # Notion Database IDs (use these exact IDs or create your own)
+   NOTION_DATABASE_ID=24476a959af7810d9ff5c3f835e82ed7  # Content Plan
+   NOTION_DB_CATEGORIES=24476a959af7814fb3cbeea2c593ab30
+   NOTION_DB_CONTENT_PLAN=24476a959af7810d9ff5c3f835e82ed7
+   NOTION_DB_RULES_EXAMPLES=24476a959af781aabc96c0b3627fbd55
+   NOTION_DB_IMAGE_STYLES=24476a959af781809184e7676e54acf9
    ```
 
-5. **Set up Notion database**
+5. **Set up Notion integration**
    
-   Create a database with these properties:
-   - Name (title)
-   - Status (select): Waiting, Processing, Complete, Error
-   - Command Used (text)
-   - Parameters (text)
-   - Task Description (text)
+   a. Create Notion integration:
+      - Go to https://www.notion.so/my-integrations
+      - Click "New integration"
+      - Give it a name (e.g., "Social Media Agent")
+      - Copy the integration token
+   
+   b. Connect integration to your Notion workspace:
+      - Open your Notion page
+      - Click "..." menu → "Add connections"
+      - Select your integration
+   
+   c. Required Notion databases structure:
+   
+   **Content Plan - AI Workflow** (Main database):
+   - Название задачи (title) - Task name
+   - Status (select): Idea, In Progress, In Review, Published, Rejected
+   - Agent Status (select): Waiting, Research Agent, Copywriter Agent, Complete
    - Execution Mode (select): Instant, Scheduled
-   - Research Data (text)
-   - Content (text)
-   - Error (text)
-   - Webhook URL (url)
+   - Channel (select): Facebook, Instagram, Twitter, LinkedIn
+   - Command Used (rich_text)
+   - Research Data (rich_text)
+   - Final Text (rich_text)
+   - Error Log (rich_text)
+   
+   **Categories and Topics**:
+   - Topic Name (title)
+   - Category (select): Market news, Case studies, Events, Office life/Team, Products
+   - Subcategory (select)
+   - Benefits & Key Points (rich_text)
+   
+   **Rules / Examples**:
+   - Name (title)
+   - Channel (select)
+   - Tone of Voice (select)
+   - Brand Guidelines (rich_text)
+   - Content Examples (rich_text)
+   
+   **Image Styles**:
+   - Style Name (title)
+   - Base Prompt (rich_text)
+   - Image Size (select)
+   - Mood (multi_select)
 
 6. **Start Redis**
    ```bash

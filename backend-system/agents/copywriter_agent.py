@@ -10,6 +10,7 @@ import re
 
 from config import settings
 from api.models import ContentResult, ResearchResult
+from shared.notion_client import get_archetype_by_name, get_archetype_voice, add_task_archetype, get_brand_guidelines
 
 logger = logging.getLogger(__name__)
 
@@ -43,19 +44,26 @@ class CopywriterAgent:
         keywords = params.get("keywords", [])
         call_to_action = params.get("call_to_action", "")
         
-        logger.info(f"Generating {platform} content about: {topic}, tone: {tone}")
+        # Get archetype from context (set by Research Agent)
+        archetype_name = context.get("selected_archetype", "Caregiver")
+        archetype = get_archetype_by_name(archetype_name)
+        
+        logger.info(f"Generating {platform} content about: {topic}, tone: {tone}, archetype: {archetype_name}")
+        
+        # Get brand guidelines for platform
+        brand_guidelines = await get_brand_guidelines(platform.capitalize())
         
         try:
-            # Generate content
+            # Generate content with archetype voice
             content = await self._generate_content(
-                platform, topic, tone, research_data, keywords, call_to_action
+                platform, topic, tone, research_data, keywords, call_to_action, archetype, brand_guidelines
             )
             
             # Optimize for platform
             optimized_content = self._optimize_for_platform(content, platform)
             
             # Generate hashtags
-            hashtags = await self._generate_hashtags(topic, platform, research_data)
+            hashtags = await self._generate_hashtags(topic, platform, research_data, archetype)
             
             # Create engagement tips
             engagement_tips = self._create_engagement_tips(platform, tone)
@@ -65,6 +73,10 @@ class CopywriterAgent:
             
             # Score CTA effectiveness
             cta_score = self._score_cta(optimized_content, call_to_action)
+            
+            # Update task with archetype used
+            if context.get("task_id"):
+                await add_task_archetype(context["task_id"], archetype_name)
             
             result = ContentResult(
                 content=optimized_content,
@@ -77,7 +89,7 @@ class CopywriterAgent:
                 cta_effectiveness=cta_score
             )
             
-            logger.info(f"Content generated: {result.character_count} chars, {len(hashtags)} hashtags")
+            logger.info(f"Content generated: {result.character_count} chars, {len(hashtags)} hashtags, archetype: {archetype_name}")
             return result
             
         except Exception as e:
@@ -98,7 +110,9 @@ class CopywriterAgent:
         tone: str,
         research_data: Any,
         keywords: List[str],
-        call_to_action: str
+        call_to_action: str,
+        archetype: Dict[str, Any],
+        brand_guidelines: Optional[Dict[str, Any]]
     ) -> str:
         """Generate content using GPT-4."""
         # Prepare research context
@@ -114,11 +128,30 @@ class CopywriterAgent:
         # Build CTA instruction
         cta_text = f"End with this call-to-action: {call_to_action}" if call_to_action else ""
         
+        # Build archetype guidance
+        archetype_traits = ', '.join(archetype["traits"])
+        archetype_voice = archetype["voice"]
+        
+        # Extract brand guidelines if available
+        guidelines_text = ""
+        if brand_guidelines:
+            if brand_guidelines.get("brand_guidelines"):
+                guidelines_text += f"\nBrand Guidelines: {brand_guidelines['brand_guidelines']}"
+            if brand_guidelines.get("archetype_guidelines"):
+                guidelines_text += f"\nArchetype Guidelines: {brand_guidelines['archetype_guidelines']}"
+        
         prompt = f"""
         Create {platform} content about: {topic}
         
         Platform: {platform} (max {char_limit} characters)
-        Tone: {tone} - {tone_guidance}
+        Base Tone: {tone} - {tone_guidance}
+        
+        Brand Voice: {archetype_voice}
+        Archetype: {archetype['name']} - {archetype['description']}
+        Personality Traits: {archetype_traits}
+        
+        {guidelines_text}
+        
         {keywords_text}
         {cta_text}
         
@@ -126,11 +159,12 @@ class CopywriterAgent:
         {research_context}
         
         Requirements:
-        1. Optimize for {platform} best practices
-        2. Make it engaging and shareable
-        3. Include relevant insights from research
-        4. Stay within character limit
-        5. Use appropriate formatting for the platform
+        1. Write in the {archetype['name']} voice - be {archetype_traits}
+        2. Optimize for {platform} best practices
+        3. Make it engaging and shareable
+        4. Include relevant insights from research
+        5. Stay within character limit
+        6. Use appropriate formatting for the platform
         
         Generate only the post content, no explanations.
         """
@@ -141,7 +175,7 @@ class CopywriterAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": f"You are an expert social media copywriter specializing in {platform} content."
+                        "content": f"You are a social media copywriter for Kea brand. You embody the {archetype['name']} archetype: {archetype['description']}. Your voice is {archetype_voice}."
                     },
                     {"role": "user", "content": prompt}
                 ],
@@ -196,7 +230,8 @@ class CopywriterAgent:
         self,
         topic: str,
         platform: str,
-        research_data: Any
+        research_data: Any,
+        archetype: Dict[str, Any]
     ) -> List[str]:
         """Generate relevant hashtags."""
         # Extract keywords from research if available
@@ -207,25 +242,37 @@ class CopywriterAgent:
                     research_data.get("key_findings", [])
                 )
         
+        # Add archetype-specific hashtag guidance
+        archetype_hashtag_hints = {
+            "Caregiver": ["support", "trust", "together", "community"],
+            "Explorer": ["innovation", "future", "technology", "solutions"],
+            "Regular Guy": ["simple", "practical", "business", "everyday"]
+        }
+        
+        hints = archetype_hashtag_hints.get(archetype["name"], [])
+        
         prompt = f"""
         Generate {3 if platform == 'twitter' else 5} relevant hashtags for a {platform} post about: {topic}
         
+        Brand archetype: {archetype['name']}
+        Hashtag themes: {', '.join(hints)}
         Additional context: {', '.join(research_keywords[:5])}
         
         Requirements:
         - Popular and trending hashtags
         - Mix of broad and specific tags
+        - Align with {archetype['name']} archetype values
         - No spaces, proper camelCase
         - Return as JSON array
         
-        Example: ["AITrends", "MachineLearning", "TechInnovation"]
+        Example: ["TrustedBanking", "InnovativeFinance", "SimpleBusiness"]
         """
         
         try:
             response = await self.openai_client.chat.completions.create(
                 model="gpt-4-turbo-preview",
                 messages=[
-                    {"role": "system", "content": "You are a social media hashtag expert."},
+                    {"role": "system", "content": f"You are a social media hashtag expert for Kea brand with {archetype['name']} personality."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.5,
